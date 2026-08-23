@@ -1,98 +1,100 @@
-import * as Device from 'expo-device';
-import { Platform, StyleSheet } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { useRouter } from 'expo-router';
+import { PagerView, type PagerViewRef } from '@expo/ui/community/pager-view';
+import { useCallback, useMemo, useRef, useState } from 'react';
+import { StyleSheet, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { AnimatedIcon } from '@/components/animated-icon';
-import { HintRow } from '@/components/hint-row';
-import { ThemedText } from '@/components/themed-text';
-import { ThemedView } from '@/components/themed-view';
-import { WebBadge } from '@/components/web-badge';
-import { BottomTabInset, MaxContentWidth, Spacing } from '@/constants/theme';
+import { AddSpendingSheet } from '@/components/add-spending-sheet';
+import { MonthDots } from '@/components/month-dots';
+import { MonthPage } from '@/components/month-page';
+import { SpendingFab } from '@/components/spending-fab';
+import { ControlHeight, Spacing } from '@/constants/theme';
+import { currentMonthKey, monthOptions, type MonthKey } from '@/lib/spending';
+import { useLedger } from '@/store/ledger';
 
-function getDevMenuHint() {
-  if (Platform.OS === 'web') {
-    return <ThemedText type="small">use browser devtools</ThemedText>;
-  }
-  if (Device.isDevice) {
-    return (
-      <ThemedText type="small">
-        shake device or press <ThemedText type="code">m</ThemedText> in terminal
-      </ThemedText>
-    );
-  }
-  const shortcut = Platform.OS === 'android' ? 'cmd+m (or ctrl+m)' : 'cmd+d';
-  return (
-    <ThemedText type="small">
-      press <ThemedText type="code">{shortcut}</ThemedText>
-    </ThemedText>
+export default function SpendingScreen() {
+  const insets = useSafeAreaInsets();
+  const router = useRouter();
+  const { items } = useLedger();
+
+  const [month, setMonth] = useState(currentMonthKey());
+  const [sheetVisible, setSheetVisible] = useState(false);
+  const pagerRef = useRef<PagerViewRef>(null);
+
+  const months = useMemo(() => monthOptions(items), [items]);
+  const index = Math.max(months.indexOf(month), 0);
+
+  const openAll = useCallback(() => router.push('/transactions'), [router]);
+  const openCategory = useCallback(
+    (category: string) => router.push({ pathname: '/transactions', params: { category } }),
+    [router],
   );
-}
 
-export default function HomeScreen() {
+  const jumpToMonth = (next: MonthKey) => {
+    setMonth(next);
+    pagerRef.current?.setPage(months.indexOf(next));
+  };
+
   return (
-    <ThemedView style={styles.container}>
-      <SafeAreaView style={styles.safeArea}>
-        <ThemedView style={styles.heroSection}>
-          <AnimatedIcon />
-          <ThemedText type="title" style={styles.title}>
-            Welcome to&nbsp;Expo
-          </ThemedText>
-        </ThemedView>
+    <View style={styles.container}>
+      {/* A native pager (UIPageViewController) rather than a horizontal
+          FlatList: each page holds a vertical ScrollView with a SwiftUI chart
+          in it, and nesting those inside an RN horizontal scroll view makes
+          the native chart lag behind the rest of the page while scrolling. */}
+      <PagerView
+        ref={pagerRef}
+        style={styles.pager}
+        initialPage={index}
+        onPageSelected={(e) => {
+          const next = months[e.nativeEvent.position];
+          if (next && next !== month) setMonth(next);
+        }}>
+        {months.map((key) => (
+          <View key={key} collapsable={false} style={styles.page}>
+            <MonthPage
+              month={key}
+              items={items}
+              bottomPadding={ControlHeight + insets.bottom + Spacing.four}
+              onOpenAll={openAll}
+              onOpenCategory={openCategory}
+            />
+          </View>
+        ))}
+      </PagerView>
 
-        <ThemedText type="code" style={styles.code}>
-          get started
-        </ThemedText>
+      {/* Weather's bottom bar: a dots capsule centered between edge buttons.
+          Floats over the pages rather than sitting on an opaque strip. */}
+      <View
+        style={[styles.bottomBar, { bottom: insets.bottom + Spacing.two }]}
+        pointerEvents="box-none">
+        <View style={styles.side} />
+        <MonthDots months={months} month={month} onChange={jumpToMonth} />
+        <View style={styles.side}>
+          <SpendingFab onPress={() => setSheetVisible(true)} />
+        </View>
+      </View>
 
-        <ThemedView type="backgroundElement" style={styles.stepContainer}>
-          <HintRow
-            title="Try editing"
-            hint={<ThemedText type="code">src/app/index.tsx</ThemedText>}
-          />
-          <HintRow title="Dev tools" hint={getDevMenuHint()} />
-          <HintRow
-            title="Fresh start"
-            hint={<ThemedText type="code">npm run reset-project</ThemedText>}
-          />
-        </ThemedView>
-
-        {Platform.OS === 'web' && <WebBadge />}
-      </SafeAreaView>
-    </ThemedView>
+      <AddSpendingSheet visible={sheetVisible} onClose={() => setSheetVisible(false)} />
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    justifyContent: 'center',
+  container: { flex: 1 },
+  pager: { flex: 1 },
+  page: { flex: 1 },
+  bottomBar: {
+    position: 'absolute',
+    left: Spacing.four,
+    right: Spacing.four,
     flexDirection: 'row',
-  },
-  safeArea: {
-    flex: 1,
-    paddingHorizontal: Spacing.four,
     alignItems: 'center',
-    gap: Spacing.three,
-    paddingBottom: BottomTabInset + Spacing.three,
-    maxWidth: MaxContentWidth,
+    justifyContent: 'space-between',
   },
-  heroSection: {
+  // Equal-width flanks keep the dots capsule centered on screen even though
+  // only one side holds a button.
+  side: {
+    width: ControlHeight,
     alignItems: 'center',
-    justifyContent: 'center',
-    flex: 1,
-    paddingHorizontal: Spacing.four,
-    gap: Spacing.four,
-  },
-  title: {
-    textAlign: 'center',
-  },
-  code: {
-    textTransform: 'uppercase',
-  },
-  stepContainer: {
-    gap: Spacing.three,
-    alignSelf: 'stretch',
-    paddingHorizontal: Spacing.three,
-    paddingVertical: Spacing.four,
-    borderRadius: Spacing.four,
   },
 });
