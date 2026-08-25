@@ -178,6 +178,42 @@ the glass wraps it.
 scroller, pager, sheet, or animated container should be RN. Two of three SwiftUI
 components in this app were ultimately replaced.
 
+### Two Liquid Glass APIs that don't match
+**Symptom:** the + button had a crisp thin rim; the dots capsule beside it had none.
+Same design language, visibly different controls.
+**Cause:** they were different APIs. `GlassView` (`expo-glass-effect`) is a raw glass
+**material** with no border. SwiftUI's `.buttonStyle(.glass)` (`@expo/ui`) is a glass
+**control**, which draws its own rim as a pressable affordance. Neither is wrong; they
+just aren't the same component.
+**Fix:** build both from `@expo/ui`'s `glassEffect()` modifier inside a
+`GlassEffectContainer`. One API → identical rims, and it unlocks Apple's glass
+**blending** (nearby glass surfaces merge/separate), which separate `GlassView`s can't do
+at all — that's the effect Weather uses.
+**Note:** normally a SwiftUI host is a liability here (see the section below), but this
+bar is a fixed overlay that never scrolls, pages, or animates — the one context where
+hosted SwiftUI is safe.
+**Also confirmed:** `tint()` on a *non-prominent* glass button colors the glyph, not the
+fill. On `.glassProminent` it fills the background instead.
+
+### `tint()` colors the glass material on device, only the glyph on simulator
+**Symptom:** the + button rendered as a clear glass circle in the simulator, but a
+**pale blue filled** circle on the phone. Same build, same JS.
+**Cause:** `tint(Accent)` alongside `glassEffect()` tints the glass *material*. The
+simulator's glass approximation doesn't render that tint; real hardware does.
+**Fix:** use `foregroundColor(Accent)` for the glyph and leave the material untinted.
+**Lesson:** the simulator does not render Liquid Glass faithfully — tint, rims, and
+refraction all differ. Glass work has to be checked on hardware.
+
+### `MenuView` trigger stretches, so iOS highlights the whole row
+**Symptom:** on device, the category filter showed a grey rounded band running off the
+right edge; the simulator showed none.
+**Cause:** `MenuView` takes a `style` prop for its trigger. Left unset, the trigger fills
+the available width in a flex row, and iOS paints the menu's press highlight across all of
+it. Not a device/simulator difference in rendering — just a difference in whether the
+screenshot caught the highlight.
+**Fix:** pass `style` to `MenuView` (not to the inner anchor view) and size it to content
+(`alignSelf: 'flex-start'`).
+
 ---
 
 ## Navigation & header
@@ -239,6 +275,27 @@ version actually accepts. Expo's docs are a curated subset and lag the SDK.
 ---
 
 ## Tooling notes
+
+- **agent-device on a physical iPhone — works, but needs three things.** Its XCUITest
+  runner must be code-signed for your device, and the runner project ships Callstack's
+  team and bundle IDs, which nobody else can sign
+  ([issue #145](https://github.com/callstack/agent-device/issues/145)). Recipe:
+  1. `sudo DevToolsSecurity -enable` — needs a real TTY, so run it in your own terminal.
+  2. Set both env vars (team ID from your app's `DEVELOPMENT_TEAM`, bundle ID unique to
+     you — the generic default is already claimed by another team):
+     ```bash
+     export AGENT_DEVICE_IOS_TEAM_ID=<YOUR_TEAM_ID>
+     export AGENT_DEVICE_IOS_BUNDLE_ID=com.<you>.agentdevice.runner
+     ```
+  3. **Restart the daemon.** This is the non-obvious part: agent-device runs a background
+     daemon that builds the runner, and it only sees env vars present when *it* started.
+     Exporting per-command silently does nothing — the build kept using Callstack's IDs.
+     `agent-device daemon stop` refused ("PID identity could not be verified"), so
+     `kill <pid>` from `pgrep -f agent-device.*daemon`; it restarts on the next command.
+  Persisted in this repo via `mise.toml` (`[env]`), since mise is activated in the shell
+  and applies them on `cd`. First run after this builds and installs the runner, so it's
+  slow; later ones are fast. The runner then lives on the phone as
+  `com.<you>.agentdevice.runner.uitests.xctrunner`.
 
 - `agent-device`'s quick swipe fling doesn't trigger paging gestures; real drags work.
   Cost real time chasing a "bug" that wasn't one.

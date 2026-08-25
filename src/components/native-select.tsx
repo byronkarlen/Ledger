@@ -33,6 +33,9 @@ export const NativeSelect = memo(function NativeSelect({
 
   return (
     <MenuView
+      // Size the trigger to its content: left unset it stretches across the
+      // row, and iOS draws the menu's press highlight over that full width.
+      style={style}
       title={label}
       onPressAction={({ nativeEvent }) => onChange(nativeEvent.event)}
       actions={options.map((o) => ({
@@ -40,7 +43,7 @@ export const NativeSelect = memo(function NativeSelect({
         title: o.label,
         state: o.value === value ? 'on' : 'off',
       }))}>
-      <View style={[styles.anchor, style]}>
+      <View style={styles.anchor}>
         <ThemedText type="default" style={styles.value}>
           {selected?.label ?? ''}
         </ThemedText>

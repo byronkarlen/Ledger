@@ -64,6 +64,7 @@ export default function TransactionsScreen() {
               options={FILTER_OPTIONS}
               value={filter}
               onChange={handleFilterChange}
+              style={styles.filterSelect}
             />
           </View>
         }
@@ -100,6 +101,9 @@ export default function TransactionsScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
+  filterSelect: {
+    alignSelf: 'flex-start',
+  },
   filterBar: {
     flexDirection: 'row',
     alignItems: 'center',

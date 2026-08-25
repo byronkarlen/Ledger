@@ -5,9 +5,8 @@ import { StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { AddSpendingSheet } from '@/components/add-spending-sheet';
-import { MonthDots } from '@/components/month-dots';
+import { BottomBar } from '@/components/bottom-bar';
 import { MonthPage } from '@/components/month-page';
-import { SpendingFab } from '@/components/spending-fab';
 import { ControlHeight, Spacing } from '@/constants/theme';
 import { currentMonthKey, monthOptions, type MonthKey } from '@/lib/spending';
 import { useLedger } from '@/store/ledger';
@@ -67,11 +66,12 @@ export default function SpendingScreen() {
       <View
         style={[styles.bottomBar, { bottom: insets.bottom + Spacing.two }]}
         pointerEvents="box-none">
-        <View style={styles.side} />
-        <MonthDots months={months} month={month} onChange={jumpToMonth} />
-        <View style={styles.side}>
-          <SpendingFab onPress={() => setSheetVisible(true)} />
-        </View>
+        <BottomBar
+          months={months}
+          month={month}
+          onSelectMonth={jumpToMonth}
+          onAdd={() => setSheetVisible(true)}
+        />
       </View>
 
       <AddSpendingSheet visible={sheetVisible} onClose={() => setSheetVisible(false)} />
@@ -87,14 +87,6 @@ const styles = StyleSheet.create({
     position: 'absolute',
     left: Spacing.four,
     right: Spacing.four,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
-  // Equal-width flanks keep the dots capsule centered on screen even though
-  // only one side holds a button.
-  side: {
-    width: ControlHeight,
     alignItems: 'center',
   },
 });
