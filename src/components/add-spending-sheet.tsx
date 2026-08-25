@@ -194,7 +194,14 @@ function SheetContent({ onClose, editItem }: Omit<Props, 'visible'>) {
             ref={amountRef}
             autoFocus
             value={amount}
-            onChangeText={(t) => setAmount(sanitizeAmount(t))}
+            onChangeText={(t) => {
+              setAmount(sanitizeAmount(t));
+              // A third decimal digit can't extend the price. Instead of
+              // repainting the rejected character (a visible flicker), treat
+              // it as "done" and move on to the title.
+              const decimals = t.replace(/,/g, '.').split('.')[1];
+              if (decimals && decimals.length > 2) titleRef.current?.focus();
+            }}
             placeholder="0.00"
             placeholderTextColor={theme.textSecondary}
             keyboardType="decimal-pad"

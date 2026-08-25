@@ -221,6 +221,10 @@ screenshot caught the highlight.
 container. Same root cause as cases 1–3.
 **Real fix:** replaced `MenuView` with `ActionSheetIOS` and a plain RN `Pressable`
 trigger. Still a fully native picker UI, nothing hosted.
+**Epilogue:** the anchored-menu look came back later via `@react-native-menu/menu`,
+which attaches a `UIMenu` to a plain UIKit view — no SwiftUI hosting. Verified clean on
+device in the same sheet where the hosted version broke. The doctrine holds: the problem
+was never "menus", it was *hosted SwiftUI* triggers.
 
 ---
 

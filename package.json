@@ -5,6 +5,7 @@
   "dependencies": {
     "@expo/ui": "~57.0.13",
     "@gorhom/bottom-sheet": "^5.2.14",
+    "@react-native-menu/menu": "^2.0.0",
     "expo": "~57.0.16",
     "expo-constants": "~57.0.7",
     "expo-dev-client": "~57.0.15",
