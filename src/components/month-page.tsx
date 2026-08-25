@@ -99,10 +99,16 @@ export function MonthPage({ month, items, bottomPadding, onOpenAll, onOpenCatego
                 if (isInsideChart(e)) onOpenAll();
               }}
               onResponderTerminate={() => setChartPressed(false)}>
-              <ThemedText type="small" themeColor="textSecondary">
-                Total spend
-              </ThemedText>
-              <ThemedText style={styles.chartTotal}>{formatDollars(total)}</ThemedText>
+              {/* Touch-transparent: locationX/Y in the responder callbacks are
+                  relative to the deepest view hit, so a tap landing on the
+                  text would otherwise be measured in the text's own frame and
+                  fail the circle check. */}
+              <View pointerEvents="none" style={styles.chartLabel}>
+                <ThemedText type="small" themeColor="textSecondary">
+                  Total spend
+                </ThemedText>
+                <ThemedText style={styles.chartTotal}>{formatDollars(total)}</ThemedText>
+              </View>
             </View>
           </View>
 
@@ -154,6 +160,9 @@ const styles = StyleSheet.create({
     borderRadius: CHART_HEIGHT / 2,
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  chartLabel: {
+    alignItems: 'center',
   },
   chartTotal: {
     fontSize: 40,

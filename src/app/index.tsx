@@ -1,14 +1,15 @@
-import { useRouter } from 'expo-router';
 import { PagerView, type PagerViewRef } from '@expo/ui/community/pager-view';
-import { useCallback, useMemo, useRef, useState } from 'react';
+import { Stack, useRouter } from 'expo-router';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { AddButton } from '@/components/add-button';
 import { AddSpendingSheet } from '@/components/add-spending-sheet';
-import { BottomBar } from '@/components/bottom-bar';
+import { MonthHeader } from '@/components/month-header';
 import { MonthPage } from '@/components/month-page';
 import { ControlHeight, Spacing } from '@/constants/theme';
-import { currentMonthKey, monthOptions, type MonthKey } from '@/lib/spending';
+import { currentMonthKey, monthOptions } from '@/lib/spending';
 import { useLedger } from '@/store/ledger';
 
 export default function SpendingScreen() {
@@ -16,6 +17,7 @@ export default function SpendingScreen() {
   const router = useRouter();
   const { items } = useLedger();
 
+  // Opens on the current month: it is always the last entry in the range.
   const [month, setMonth] = useState(currentMonthKey());
   const [sheetVisible, setSheetVisible] = useState(false);
   const pagerRef = useRef<PagerViewRef>(null);
@@ -23,23 +25,51 @@ export default function SpendingScreen() {
   const months = useMemo(() => monthOptions(items), [items]);
   const index = Math.max(months.indexOf(month), 0);
 
+  // Storage hydration is async, so the pager first mounts with only the
+  // current month. When earlier months load they are prepended, which silently
+  // re-maps page positions (page 0 becomes the earliest month) while the pager
+  // stays put. Re-sync it to the selected month whenever the page set changes.
+  // Deliberately not keyed on `month`/`index`: month changes are already
+  // synced by stepMonth/onPageSelected, and jumping there would cancel the
+  // chevrons' slide animation.
+  useEffect(() => {
+    pagerRef.current?.setPageWithoutAnimation(index);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [months.length]);
+
   const openAll = useCallback(() => router.push('/transactions'), [router]);
   const openCategory = useCallback(
     (category: string) => router.push({ pathname: '/transactions', params: { category } }),
     [router],
   );
 
-  const jumpToMonth = (next: MonthKey) => {
+  const stepMonth = (delta: number) => {
+    const next = months[index + delta];
+    if (!next) return;
     setMonth(next);
-    pagerRef.current?.setPage(months.indexOf(next));
+    pagerRef.current?.setPage(index + delta);
   };
 
   return (
     <View style={styles.container}>
+      <Stack.Screen
+        options={{
+          headerTitle: () => (
+            <MonthHeader
+              month={month}
+              canGoBack={index > 0}
+              canGoForward={index < months.length - 1}
+              onBack={() => stepMonth(-1)}
+              onForward={() => stepMonth(1)}
+            />
+          ),
+        }}
+      />
+
       {/* A native pager (UIPageViewController) rather than a horizontal
-          FlatList: each page holds a vertical ScrollView with a SwiftUI chart
-          in it, and nesting those inside an RN horizontal scroll view makes
-          the native chart lag behind the rest of the page while scrolling. */}
+          FlatList: each page holds a vertical ScrollView, and nesting those
+          inside an RN horizontal scroll view desyncs scrolling. Swiping and
+          the header chevrons drive the same pager. */}
       <PagerView
         ref={pagerRef}
         style={styles.pager}
@@ -61,17 +91,8 @@ export default function SpendingScreen() {
         ))}
       </PagerView>
 
-      {/* Weather's bottom bar: a dots capsule centered between edge buttons.
-          Floats over the pages rather than sitting on an opaque strip. */}
-      <View
-        style={[styles.bottomBar, { bottom: insets.bottom + Spacing.two }]}
-        pointerEvents="box-none">
-        <BottomBar
-          months={months}
-          month={month}
-          onSelectMonth={jumpToMonth}
-          onAdd={() => setSheetVisible(true)}
-        />
+      <View style={[styles.addButton, { bottom: insets.bottom + Spacing.two }]}>
+        <AddButton onPress={() => setSheetVisible(true)} />
       </View>
 
       <AddSpendingSheet visible={sheetVisible} onClose={() => setSheetVisible(false)} />
@@ -83,10 +104,8 @@ const styles = StyleSheet.create({
   container: { flex: 1 },
   pager: { flex: 1 },
   page: { flex: 1 },
-  bottomBar: {
+  addButton: {
     position: 'absolute',
-    left: Spacing.four,
     right: Spacing.four,
-    alignItems: 'center',
   },
 });

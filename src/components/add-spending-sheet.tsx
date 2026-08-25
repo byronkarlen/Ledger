@@ -152,7 +152,9 @@ function SheetContent({ onClose, editItem }: Omit<Props, 'visible'>) {
       enablePanDownToClose
       android_keyboardInputMode="adjustResize"
       backdropComponent={renderBackdrop}
-      backgroundStyle={{ backgroundColor: theme.backgroundElement }}
+      // Large top radius, matching how iOS 26 sheets mirror the display's
+      // corner curve instead of a small card radius.
+      backgroundStyle={{ backgroundColor: theme.backgroundElement, borderRadius: 38 }}
       handleIndicatorStyle={{ backgroundColor: theme.backgroundSelected }}>
       <BottomSheetView style={[styles.content, { paddingBottom: insets.bottom + Spacing.four }]}>
         <View style={styles.header}>

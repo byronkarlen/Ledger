@@ -175,8 +175,9 @@ Measured by pixel-diffing screenshots. Also: **modifier order matters** — `fra
 the glass wraps it.
 
 **Takeaway:** `@expo/ui` is fine for static, non-scrolling chrome. Anything inside a
-scroller, pager, sheet, or animated container should be RN. Two of three SwiftUI
-components in this app were ultimately replaced.
+scroller, pager, sheet, or animated container should be RN. Three of four SwiftUI
+components in this app were ultimately replaced (picker, chart, menu); only the fixed
+glass + button survived.
 
 ### Two Liquid Glass APIs that don't match
 **Symptom:** the + button had a crisp thin rim; the dots capsule beside it had none.
@@ -213,6 +214,13 @@ it. Not a device/simulator difference in rendering — just a difference in whet
 screenshot caught the highlight.
 **Fix:** pass `style` to `MenuView` (not to the inner anchor view) and size it to content
 (`alignSelf: 'flex-start'`).
+**Update — the fix only held outside the sheet.** Inside the bottom sheet on device, both
+`alignSelf` and explicit `width`/`height` failed: the band stayed and the label vanished.
+`MenuView` is a `Host matchContents` wrapping a SwiftUI `Menu` wrapping an
+`RNHostView matchContents` — a *nested* host, measured twice, inside an animated
+container. Same root cause as cases 1–3.
+**Real fix:** replaced `MenuView` with `ActionSheetIOS` and a plain RN `Pressable`
+trigger. Still a fully native picker UI, nothing hosted.
 
 ---
 
@@ -240,6 +248,17 @@ internal path that could move on upgrade.
 
 **Lesson:** the vendored `types.d.ts` is the only source of truth for what this SDK
 version actually accepts. Expo's docs are a curated subset and lag the SDK.
+
+### Pager positions silently remap when async data prepends pages
+**Symptom:** cold launch showed "August 2026" in the header but **May's data** in the
+page. Chevrons and swiping looked fine, which hid the bug for days.
+**Cause:** storage hydration is async, so the pager first mounts with one page (the
+current month) at `initialPage=0`. When earlier months load they are *prepended*, and
+`UIPageViewController` keeps its numeric position — page 0 now means the earliest month.
+No `onPageSelected` fires, so state and pager disagree. The chevrons masked it because
+they call `setPage()` and resync as a side effect.
+**Fix:** an effect keyed on `months.length` that calls `setPageWithoutAnimation(index)`.
+Keyed on length only — keying on the month would cancel the chevrons' slide animation.
 
 ---
 
@@ -269,6 +288,11 @@ version actually accepts. Expo's docs are a curated subset and lag the SDK.
 - **`Pressable` can't do non-rectangular hit testing.** It spreads its own Pressability
   handlers *after* your props (`Pressable.js:336`), so `onStartShouldSetResponder` is
   overridden. Circular tap target on the donut required dropping to the responder system.
+- **Responder `locationX/Y` are relative to the deepest view hit, not the responder.**
+  Taps on the "Total spend" text inside the donut's circular tap area were measured in the
+  *text's* frame, failed the circle check, and were declined — so tapping the middle of
+  the chart did nothing while the ring worked. Fix: wrap the labels in a
+  `pointerEvents="none"` view so the tap area is always the touch target.
 - **`GlassView` with `isInteractive` swallows touches** natively, so a wrapping
   `Pressable`'s `onPress` never fires.
 
@@ -292,12 +316,26 @@ version actually accepts. Expo's docs are a curated subset and lag the SDK.
      Exporting per-command silently does nothing — the build kept using Callstack's IDs.
      `agent-device daemon stop` refused ("PID identity could not be verified"), so
      `kill <pid>` from `pgrep -f agent-device.*daemon`; it restarts on the next command.
-  Persisted in this repo via `mise.toml` (`[env]`), since mise is activated in the shell
-  and applies them on `cd`. First run after this builds and installs the runner, so it's
-  slow; later ones are fast. The runner then lives on the phone as
-  `com.<you>.agentdevice.runner.uitests.xctrunner`.
+  Persisted in `~/.zshrc`, because the daemon reads env at *its* spawn, not per `cd` —
+  repo-level `mise.toml` values would be invisible to a daemon started elsewhere. First
+  run after this builds and installs the runner, so it's slow; later ones are fast. The
+  runner then lives on the phone as `com.<you>.agentdevice.runner.uitests.xctrunner`.
 
 - `agent-device`'s quick swipe fling doesn't trigger paging gestures; real drags work.
   Cost real time chasing a "bug" that wasn't one.
+- **`press "some label"` isn't a thing** — a bare string is `INVALID_ARGS`. Targets are
+  `@refs` from `snapshot -i`, `key=value` selectors, or raw point coordinates
+  (physical px ÷ scale).
+- **gorhom Bottom Sheet content is invisible to the accessibility tree** — the sheet
+  container is marked `accessible`, so its children collapse into one "Bottom Sheet" node.
+  No refs, no selectors; automation inside the sheet is coordinates-only.
+- **Sheet coordinates go stale when the keyboard changes.** Switching fields swaps the
+  keyboard/accessory bar height, and `keyboardBehavior="interactive"` shifts the whole
+  sheet ~20–40pt. Two "taps on ✓" measured from an old screenshot landed on the backdrop —
+  which *dismisses* the sheet, indistinguishable from a successful save until the data is
+  checked. Re-screenshot after every focus change; verify by data, not by "the sheet
+  closed".
+- **AX frames for pager content are unreliable** — refs inside `PagerView` pages resolved
+  to coordinates overlapping the chart and taps landed wrong. Screenshot + points worked.
 - Pixel-measuring screenshots (a small PNG reader script) settled several
   "does this actually change anything?" questions that eyeballing couldn't.

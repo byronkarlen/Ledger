@@ -1,10 +1,9 @@
-import { MenuView } from '@expo/ui/community/menu';
 import { SymbolView } from 'expo-symbols';
 import { memo } from 'react';
-import { StyleSheet, View, type StyleProp, type ViewStyle } from 'react-native';
+import { ActionSheetIOS, Pressable, StyleSheet, type StyleProp, type ViewStyle } from 'react-native';
 
 import { ThemedText } from '@/components/themed-text';
-import { Accent, Spacing } from '@/constants/theme';
+import { Accent, PressedOpacity, Spacing } from '@/constants/theme';
 
 export type SelectOption = { value: string; label: string };
 
@@ -17,10 +16,11 @@ type Props = {
 };
 
 /**
- * A native iOS dropdown. The menu itself is native, but its anchor is an
- * ordinary React Native row — a SwiftUI-hosted picker mis-anchors its content
- * whenever it lays out during an animation (sheet opening, keyboard sliding),
- * leaving the label floating above its row.
+ * Native single-choice picker: a plain RN trigger that presents an iOS action
+ * sheet. Deliberately not a SwiftUI menu — every hosted-SwiftUI trigger tried
+ * here (Picker, MenuView) mis-measured inside animating containers, painting
+ * a stray highlight band across the row on hardware. An action sheet has no
+ * hosted views, so there is nothing to mis-measure.
  */
 export const NativeSelect = memo(function NativeSelect({
   label,
@@ -31,25 +31,34 @@ export const NativeSelect = memo(function NativeSelect({
 }: Props) {
   const selected = options.find((o) => o.value === value);
 
+  const open = () => {
+    const labels = options.map((o) => o.label);
+    ActionSheetIOS.showActionSheetWithOptions(
+      {
+        title: label,
+        options: [...labels, 'Cancel'],
+        cancelButtonIndex: labels.length,
+        disabledButtonIndices: [],
+      },
+      (chosen) => {
+        if (chosen < labels.length) onChange(options[chosen].value);
+      },
+    );
+  };
+
   return (
-    <MenuView
-      // Size the trigger to its content: left unset it stretches across the
-      // row, and iOS draws the menu's press highlight over that full width.
-      style={style}
-      title={label}
-      onPressAction={({ nativeEvent }) => onChange(nativeEvent.event)}
-      actions={options.map((o) => ({
-        id: o.value,
-        title: o.label,
-        state: o.value === value ? 'on' : 'off',
-      }))}>
-      <View style={styles.anchor}>
-        <ThemedText type="default" style={styles.value}>
-          {selected?.label ?? ''}
-        </ThemedText>
-        <SymbolView name="chevron.up.chevron.down" size={12} tintColor={Accent} weight="semibold" />
-      </View>
-    </MenuView>
+    <Pressable
+      onPress={open}
+      accessibilityRole="button"
+      accessibilityLabel={label}
+      accessibilityValue={{ text: selected?.label }}
+      hitSlop={8}
+      style={({ pressed }) => [styles.anchor, style, pressed && { opacity: PressedOpacity }]}>
+      <ThemedText type="default" style={styles.value}>
+        {selected?.label ?? ''}
+      </ThemedText>
+      <SymbolView name="chevron.up.chevron.down" size={12} tintColor={Accent} weight="semibold" />
+    </Pressable>
   );
 });
 
