@@ -39,6 +39,11 @@ export const NativeSelect = memo(function NativeSelect({
   const selected = options.find((o) => o.value === value);
   const isTitle = appearance === 'title';
 
+  // Note on the open animation: iOS 26 draws a liquid-glass bloom that grows
+  // out of the anchor and refracts whatever sits under it (this title
+  // included) for a few frames. That is the system menu animation — an empty
+  // transparent anchor overlay was tried and changed nothing, confirming the
+  // distortion is refraction, not a snapshot of the anchor content.
   return (
     <MenuView
       title={label}

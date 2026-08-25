@@ -192,15 +192,17 @@ function SheetContent({ onClose, editItem }: Omit<Props, 'visible'>) {
           <Text style={[styles.currency, { color: theme.textSecondary }]}>$</Text>
           <BottomSheetTextInput
             ref={amountRef}
-            autoFocus
+            // Jump straight into typing a price on create; when editing,
+            // open calm with nothing focused.
+            autoFocus={!isEditing}
             value={amount}
             onChangeText={(t) => {
-              setAmount(sanitizeAmount(t));
-              // A third decimal digit can't extend the price. Instead of
-              // repainting the rejected character (a visible flicker), treat
-              // it as "done" and move on to the title.
-              const decimals = t.replace(/,/g, '.').split('.')[1];
-              if (decimals && decimals.length > 2) titleRef.current?.focus();
+              const sanitized = sanitizeAmount(t);
+              setAmount(sanitized);
+              // Two decimal digits complete a price. Hand focus to the title
+              // immediately, before a third keystroke can bounce off the
+              // sanitizer and flicker.
+              if (/\.\d\d$/.test(sanitized)) titleRef.current?.focus();
             }}
             placeholder="0.00"
             placeholderTextColor={theme.textSecondary}

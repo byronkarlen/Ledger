@@ -8,6 +8,7 @@ export type CategoryKey =
   | 'housing'
   | 'car'
   | 'travel'
+  | 'entertainment'
   | 'other';
 
 export type Category = {
@@ -27,6 +28,7 @@ export const CATEGORIES: Category[] = [
   { key: 'housing', label: 'Housing', icon: 'house.fill', color: '#007AFF' },
   { key: 'car', label: 'Car', icon: 'car.fill', color: '#5AC8FA' },
   { key: 'travel', label: 'Travel', icon: 'airplane', color: '#5856D6' },
+  { key: 'entertainment', label: 'Entertainment', icon: 'ticket.fill', color: '#AF52DE' },
   { key: 'other', label: 'Other', icon: 'ellipsis.circle.fill', color: '#8E8E93' },
 ];
 

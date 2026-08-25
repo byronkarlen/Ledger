@@ -225,6 +225,14 @@ trigger. Still a fully native picker UI, nothing hosted.
 which attaches a `UIMenu` to a plain UIKit view — no SwiftUI hosting. Verified clean on
 device in the same sheet where the hosted version broke. The doctrine holds: the problem
 was never "menus", it was *hosted SwiftUI* triggers.
+**Epilogue 2 — upward menus display reversed.** A menu that opens upward (anchored near
+the keyboard) shows its items bottom-up, so "Other" landed on top. iOS 16's fix is
+`preferredMenuElementOrder = .fixed` — but setting it on the `UIButton` did nothing,
+because the library overrides `contextMenuInteraction(_:configurationForMenuAtLocation:)`
+and presents its own `UIContextMenuConfiguration`, which bypasses the button property.
+The property has to be set on the *configuration* in that override. Patched via
+patch-package (`patches/@react-native-menu+menu+2.0.0.patch`, applied on `postinstall`);
+needs a native rebuild per destination.
 
 ---
 
@@ -299,6 +307,21 @@ Keyed on length only — keying on the month would cancel the chevrons' slide an
   `pointerEvents="none"` view so the tap area is always the touch target.
 - **`GlassView` with `isInteractive` swallows touches** natively, so a wrapping
   `Pressable`'s `onPress` never fires.
+- **Opacity pressed-feedback breaks swipe actions.** A row inside a Swipeable that dims
+  via `opacity` goes translucent on the swipe's touch-down, letting the red delete layer
+  bleed through as a pink flash. Pressed feedback on swipeable rows must stay opaque —
+  swap the background color instead. (Also: `friction={2}` halves the row's tracking
+  speed and feels sluggish; the system swipe actions track the finger 1:1.)
+- **`ReanimatedSwipeable` damps overshoot 8× by default.** The `translation` passed to
+  `renderRightActions` is post-friction: past the open snap it crawls, so a
+  full-swipe-to-delete threshold at half the screen is unreachable. `overshootFriction={1}`
+  makes translation track the finger — which is also how Reminders feels.
+- **Never commit a swipe-delete mid-drag.** Deleting while the finger is still down lets
+  the touch fall through to the row that slides up underneath — it opened that row's edit
+  sheet. Arm a flag on the UI thread when the drag passes the threshold; commit in the
+  release callback (`onSwipeableWillOpen`). Pair the removal with reanimated's
+  `SlideOutLeft` exiting (row flies off) + `LayoutAnimation.configureNext` (siblings
+  close the gap).
 
 ---
 

@@ -1,0 +1,37 @@
+diff --git a/node_modules/@react-native-menu/menu/ios/Shared/MenuViewImplementation.swift b/node_modules/@react-native-menu/menu/ios/Shared/MenuViewImplementation.swift
+index 5c4e0da..2d71c73 100644
+--- a/node_modules/@react-native-menu/menu/ios/Shared/MenuViewImplementation.swift
++++ b/node_modules/@react-native-menu/menu/ios/Shared/MenuViewImplementation.swift
+@@ -61,10 +61,18 @@ public class MenuViewImplementation: UIButton {
+    
+     public override func contextMenuInteraction(_ interaction: UIContextMenuInteraction, configurationForMenuAtLocation location: CGPoint) -> UIContextMenuConfiguration? {
+         sendMenuOpen()
+-        return UIContextMenuConfiguration(identifier: nil, previewProvider: nil) { [weak self] _ in
++        let config = UIContextMenuConfiguration(identifier: nil, previewProvider: nil) { [weak self] _ in
+             guard let self = self else { return nil }
+             return self.menu
+         }
++        // Keep the authored order even when the menu opens upward; the
++        // default (.automatic) reverses items so the first sits nearest the
++        // anchor. The button-level preferredMenuElementOrder (set in setup())
++        // is bypassed by this override, so it must be set here too.
++        if #available(iOS 16.0, *) {
++            config.preferredMenuElementOrder = .fixed
++        }
++        return config
+     }
+     
+     public override func contextMenuInteraction(_ interaction: UIContextMenuInteraction, willEndFor configuration: UIContextMenuConfiguration, animator: UIContextMenuInteractionAnimating?) {
+@@ -88,6 +96,12 @@ public class MenuViewImplementation: UIButton {
+ 
+         self.menu = menu
+         self.showsMenuAsPrimaryAction = !shouldOpenOnLongPress
++        // Keep the authored order even when the menu opens upward; the
++        // default (.automatic) reverses items so the first sits nearest the
++        // anchor.
++        if #available(iOS 16.0, *) {
++            self.preferredMenuElementOrder = .fixed
++        }
+     }
+ 
+     public override func reactSetFrame(_ frame: CGRect) {
