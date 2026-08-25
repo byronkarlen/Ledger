@@ -1,14 +1,15 @@
 import type { SFSymbol } from 'sf-symbols-typescript';
 
 export type CategoryKey =
+  | 'housing'
+  | 'car'
   | 'grocery'
   | 'fastFood'
   | 'restaurants'
-  | 'clothing'
-  | 'housing'
-  | 'car'
+  | 'health'
+  | 'shopping'
+  | 'recreation'
   | 'travel'
-  | 'entertainment'
   | 'other';
 
 export type Category = {
@@ -20,15 +21,17 @@ export type Category = {
   color: string;
 };
 
+/** Array order is the display order in pickers and menus. */
 export const CATEGORIES: Category[] = [
+  { key: 'housing', label: 'Housing', icon: 'house.fill', color: '#007AFF' },
+  { key: 'car', label: 'Car', icon: 'car.fill', color: '#5AC8FA' },
   { key: 'grocery', label: 'Grocery', icon: 'cart.fill', color: '#34C759' },
   { key: 'fastFood', label: 'Fast Food', icon: 'takeoutbag.and.cup.and.straw.fill', color: '#FF9500' },
   { key: 'restaurants', label: 'Restaurants', icon: 'fork.knife', color: '#FF3B30' },
-  { key: 'clothing', label: 'Clothing', icon: 'tshirt.fill', color: '#FF2D92' },
-  { key: 'housing', label: 'Housing', icon: 'house.fill', color: '#007AFF' },
-  { key: 'car', label: 'Car', icon: 'car.fill', color: '#5AC8FA' },
+  { key: 'health', label: 'Health', icon: 'heart.fill', color: '#00C7BE' },
+  { key: 'shopping', label: 'Shopping', icon: 'bag.fill', color: '#FF2D92' },
+  { key: 'recreation', label: 'Recreation', icon: 'gamecontroller.fill', color: '#AF52DE' },
   { key: 'travel', label: 'Travel', icon: 'airplane', color: '#5856D6' },
-  { key: 'entertainment', label: 'Entertainment', icon: 'ticket.fill', color: '#AF52DE' },
   { key: 'other', label: 'Other', icon: 'ellipsis.circle.fill', color: '#8E8E93' },
 ];
 

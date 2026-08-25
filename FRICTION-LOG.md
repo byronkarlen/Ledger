@@ -295,6 +295,13 @@ Keyed on length only — keying on the month would cancel the chevrons' slide an
   text by a frame. Fixed permanently with a fixed-width field — no layout change, nothing
   to flicker. A rejected character still paints for one frame before the sanitizer removes
   it; that's inherent to JS-side validation.
+- **The one-frame lag generalizes: text, prefixes, and styles.** A "$" prefix that only
+  joins the value with the first digit paints the bare digit for a frame before the
+  round-trip shoves the $ in — the prefix must already live in the *native* text (value is
+  always `"$" + digits`, sanitizer strips it coming back, so it can't be deleted). Same
+  law for styles: a color computed from the value (grey-when-empty) flashes on the first
+  digit and on deleting the last one. Anything that must appear atomically with a
+  keystroke has to be constant across the value's edge states.
 - **`decimal-pad` has no return key on iPhone** (iPad's does). Needed an
   `InputAccessoryView` bar for "Next" to move to the title field.
 - **`Pressable` can't do non-rectangular hit testing.** It spreads its own Pressability

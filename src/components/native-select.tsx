@@ -1,6 +1,6 @@
 import { MenuView } from '@react-native-menu/menu';
 import { SymbolView } from 'expo-symbols';
-import { memo } from 'react';
+import { memo, type ReactNode } from 'react';
 import { StyleSheet, View, type StyleProp, type ViewStyle } from 'react-native';
 
 import { ThemedText } from '@/components/themed-text';
@@ -18,6 +18,10 @@ type Props = {
    * 'title' renders like a navigation-bar title for use as a headerTitle.
    */
   appearance?: 'inline' | 'title';
+  /** Optional element shown before the value, e.g. a category badge. */
+  icon?: ReactNode;
+  /** Shown in place of the value while nothing is selected. */
+  placeholder?: string;
   style?: StyleProp<ViewStyle>;
 };
 
@@ -33,6 +37,8 @@ export const NativeSelect = memo(function NativeSelect({
   value,
   onChange,
   appearance = 'inline',
+  icon,
+  placeholder,
   style,
 }: Props) {
   const theme = useTheme();
@@ -59,13 +65,19 @@ export const NativeSelect = memo(function NativeSelect({
         accessibilityRole="button"
         accessibilityLabel={label}
         accessibilityValue={{ text: selected?.label }}>
-        <ThemedText type="default" style={isTitle ? styles.title : styles.accent}>
-          {selected?.label ?? ''}
+        {icon}
+        {/* Same progression as a text field: grey placeholder while empty,
+            primary text color once a value exists. The accent chevrons carry
+            the tap affordance. */}
+        <ThemedText
+          type="default"
+          style={isTitle ? styles.title : !selected && { color: theme.textSecondary }}>
+          {selected?.label ?? placeholder ?? ''}
         </ThemedText>
         <SymbolView
           name="chevron.up.chevron.down"
           size={12}
-          tintColor={isTitle ? theme.textSecondary : Accent}
+          tintColor={Accent}
           weight="semibold"
         />
       </View>
@@ -79,9 +91,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: Spacing.one,
     paddingVertical: Spacing.two,
-  },
-  accent: {
-    color: Accent,
   },
   // Matches the native navigation-bar title (17pt semibold).
   title: {

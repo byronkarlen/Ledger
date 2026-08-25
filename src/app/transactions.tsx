@@ -9,7 +9,7 @@ import { ThemedText } from '@/components/themed-text';
 import { RowSeparator, TransactionRow } from '@/components/transaction-row';
 import { CATEGORY_OPTIONS, isCategoryKey, type CategoryKey } from '@/constants/categories';
 import { PressedOpacity, Spacing, useTheme } from '@/constants/theme';
-import { groupByMonth } from '@/lib/spending';
+import { formatCurrency, groupByMonth, sumAmounts } from '@/lib/spending';
 import { useLedger, type SpendingItem } from '@/store/ledger';
 
 type Filter = CategoryKey | 'all';
@@ -70,8 +70,13 @@ export default function TransactionsScreen() {
         }}
         renderSectionHeader={({ section }) => (
           <View style={[styles.sectionHeader, { backgroundColor: theme.background }]}>
+            {/* With a category selected, the month header carries that
+                category's monthly total, mid-dot separated like the row
+                subtitles. Omitted for "all": the Spending page already
+                answers that question. */}
             <ThemedText type="smallBold" themeColor="textSecondary">
               {section.title}
+              {filter !== 'all' && ` · ${formatCurrency(sumAmounts(section.data))}`}
             </ThemedText>
           </View>
         )}
