@@ -72,20 +72,9 @@ export function formatDayShort(iso: string): string {
   return new Date(iso).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
 }
 
+/** Whole dollars, e.g. "$1,310" — the app ignores cent granularity. */
 export function formatCurrency(amount: number): string {
-  return `$${amount.toLocaleString('en-US', {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  })}`;
-}
-
-/** Rounded, no cents — used for headline totals and breakdowns (e.g. "$1,310"). */
-export function formatDollars(amount: number): string {
   return `$${Math.round(amount).toLocaleString('en-US')}`;
-}
-
-export function roundToCents(amount: number): number {
-  return Math.round(amount * 100) / 100;
 }
 
 export function sumAmounts(items: SpendingItem[]): number {

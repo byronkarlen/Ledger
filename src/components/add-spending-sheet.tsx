@@ -14,7 +14,6 @@ import { NativeSelect } from '@/components/native-select';
 import { ThemedText } from '@/components/themed-text';
 import { CATEGORY_OPTIONS, type CategoryKey } from '@/constants/categories';
 import { Accent, Danger, PressedOpacity, Spacing, useTheme } from '@/constants/theme';
-import { roundToCents } from '@/lib/spending';
 import { useLedger, type SpendingItem } from '@/store/ledger';
 
 const AMOUNT_FONT_SIZE = 32;
@@ -83,7 +82,9 @@ function SheetContent({ onClose, editItem }: Omit<Props, 'visible'>) {
 
   // Mounts fresh on every open, so initializers read the target item directly.
   const [title, setTitle] = useState(editItem?.title ?? '');
-  const [amount, setAmount] = useState(editItem ? String(editItem.amount) : '');
+  // Whole dollars everywhere; rounding here also cleans up any older
+  // cent-precision data on its way through an edit.
+  const [amount, setAmount] = useState(editItem ? String(Math.round(editItem.amount)) : '');
   const [category, setCategory] = useState<CategoryKey>(editItem?.category ?? 'grocery');
 
   const parsedAmount = parseFloat(amount);
@@ -103,7 +104,8 @@ function SheetContent({ onClose, editItem }: Omit<Props, 'visible'>) {
 
   function handleSave() {
     if (!canSave) return;
-    const roundedAmount = roundToCents(parsedAmount);
+    // Whatever gets typed, only whole dollars are stored and summed.
+    const roundedAmount = Math.round(parsedAmount);
     if (editItem) {
       updateItem({ ...editItem, title: title.trim(), amount: roundedAmount, category });
     } else {
@@ -204,7 +206,7 @@ function SheetContent({ onClose, editItem }: Omit<Props, 'visible'>) {
               // sanitizer and flicker.
               if (/\.\d\d$/.test(sanitized)) titleRef.current?.focus();
             }}
-            placeholder="0.00"
+            placeholder="0"
             placeholderTextColor={theme.textSecondary}
             keyboardType="decimal-pad"
             inputAccessoryViewID={AMOUNT_ACCESSORY_ID}

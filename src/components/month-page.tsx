@@ -17,10 +17,9 @@ import { CategoryBadge, RowSeparator } from '@/components/transaction-row';
 import { PressedOpacity, Spacing, useTheme } from '@/constants/theme';
 import {
   categoryBreakdown,
-  formatDollars,
+  formatCurrency,
   formatMonthName,
   itemsInMonth,
-  roundToCents,
   sumAmounts,
   type MonthKey,
 } from '@/lib/spending';
@@ -56,7 +55,7 @@ export function MonthPage({ month, items, bottomPadding, onOpenAll, onOpenCatego
   const total = useMemo(() => sumAmounts(monthItems), [monthItems]);
 
   const slices = useMemo(
-    () => breakdown.map((b) => ({ value: roundToCents(b.amount), color: b.category.color })),
+    () => breakdown.map((b) => ({ value: b.amount, color: b.category.color })),
     [breakdown],
   );
 
@@ -107,7 +106,7 @@ export function MonthPage({ month, items, bottomPadding, onOpenAll, onOpenCatego
                 <ThemedText type="small" themeColor="textSecondary">
                   Total spend
                 </ThemedText>
-                <ThemedText style={styles.chartTotal}>{formatDollars(total)}</ThemedText>
+                <ThemedText style={styles.chartTotal}>{formatCurrency(total)}</ThemedText>
               </View>
             </View>
           </View>
@@ -127,7 +126,7 @@ export function MonthPage({ month, items, bottomPadding, onOpenAll, onOpenCatego
                     </ThemedText>
                   </View>
                   <ThemedText type="smallBold" style={styles.breakdownAmount}>
-                    {formatDollars(amount)}
+                    {formatCurrency(amount)}
                   </ThemedText>
                 </View>
                 {i < breakdown.length - 1 && <RowSeparator />}
