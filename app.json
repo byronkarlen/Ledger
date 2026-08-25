@@ -9,7 +9,8 @@
     "userInterfaceStyle": "automatic",
     "ios": {
       "icon": "./assets/expo.icon",
-      "bundleIdentifier": "com.byronkarlen.Ledger"
+      "bundleIdentifier": "com.byronkarlen.Ledger",
+      "appleTeamId": "PRP7LLN8V3"
     },
     "android": {
       "adaptiveIcon": {
