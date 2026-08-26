@@ -2,7 +2,7 @@ diff --git a/node_modules/@react-native-menu/menu/ios/Shared/MenuViewImplementat
 index 5c4e0da..e0f5846 100644
 --- a/node_modules/@react-native-menu/menu/ios/Shared/MenuViewImplementation.swift
 +++ b/node_modules/@react-native-menu/menu/ios/Shared/MenuViewImplementation.swift
-@@ -61,16 +61,42 @@ public class MenuViewImplementation: UIButton {
+@@ -61,16 +61,43 @@ public class MenuViewImplementation: UIButton {
     
      public override func contextMenuInteraction(_ interaction: UIContextMenuInteraction, configurationForMenuAtLocation location: CGPoint) -> UIContextMenuConfiguration? {
          sendMenuOpen()
