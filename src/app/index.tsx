@@ -111,7 +111,16 @@ export default function SpendingScreen() {
         ))}
       </PagerView>
 
-      <View style={[styles.addButton, { bottom: insets.bottom + Spacing.two }]}>
+      {/* New purchases always land in the current month, so the button only
+          shows there. Hidden via opacity rather than unmounted: mounting a
+          SwiftUI glass host plays a materialize animation that reads as the
+          button flying in. */}
+      <View
+        pointerEvents={index === months.length - 1 ? 'auto' : 'none'}
+        style={[
+          styles.addButton,
+          { bottom: insets.bottom + Spacing.two, opacity: index === months.length - 1 ? 1 : 0 },
+        ]}>
         <AddButton onPress={() => setSheetVisible(true)} />
       </View>
 

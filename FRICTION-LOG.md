@@ -350,6 +350,26 @@ Keyed on length only — keying on the month would cancel the chevrons' slide an
   before mounting the Root Layout" render error); clear on sheet close instead.
 - **Two tap targets in one widget:** `widgetURL` on the root is the default action;
   wrap the other region in `Link destination=...`. Widgets support only one `widgetURL`.
+- **"Please adopt containerBackground API" — device-only, and doubly masked.** iOS 17+
+  replaces a widget that doesn't declare `containerBackground` with that error view, but
+  the check is only enforced by the real home-screen render on hardware: the simulator
+  never enforces it, and the widget *gallery preview* doesn't either — even on device.
+  So sim verification passed and the phone's own gallery rendered perfectly while the
+  placed widget errored. Worse, WidgetKit archives the last render per widget, so the
+  error view survives installs of fixed builds until a fresh render replaces it (remove
+  and re-add the widget to force one). The sanctioned fix — `@expo/ui`'s
+  `containerBackground` modifier on the layout root — was verifiably in the stored
+  layout, in the native modifier registry, and crash-free, yet hardware WidgetKit did
+  not credit the dynamically-applied modifier. Fixed at the Swift level instead:
+  `.containerBackground(.background, for: .widget)` on `WidgetsEntryView` in the
+  generated widget (patched via patch-package into expo-widgets' template). Two compile
+  traps inside that template: `Color(.systemBackground)` doesn't build (no UIKit import —
+  use the ShapeStyle `.background`, which adapts to dark mode), and the extension's
+  deployment floor is iOS 16.4, so the call must sit behind `if #available(iOS 17.0, *)`.
+  The Expo CLI also swallows the underlying Swift errors ("2 error(s)" with no detail) —
+  run bare `xcodebuild ... | grep error:` to see them.
+  **Meta-lesson, twice now in this project (Liquid Glass tint, WidgetKit enforcement):
+  the simulator is not the truth for widget or glass work — only hardware is.**
 
 ---
 

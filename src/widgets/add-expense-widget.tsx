@@ -42,7 +42,14 @@ const AddExpenseWidget = (props: AddExpenseWidgetProps, environment: WidgetEnvir
   const segments = props.segments ?? [];
   return (
     <VStack
-      modifiers={[widgetURL('ledger:///'), padding({ all: 16 })]}
+      modifiers={[
+        widgetURL('ledger:///'),
+        // iOS 17+ requires widgets to adopt containerBackground; the JS-level
+        // modifier passed WidgetKit's check on the simulator but not on
+        // hardware, so the native template applies it instead (patched in
+        // patches/expo-widgets: systemBackground behind WidgetsEntryView).
+        padding({ all: 16 }),
+      ]}
       alignment="leading"
       spacing={0}>
       <Text modifiers={[font({ size: 14, weight: 'semibold' }), foregroundStyle(secondary)]}>
