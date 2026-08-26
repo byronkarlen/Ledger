@@ -98,7 +98,7 @@ export function MonthPage({
               style={[styles.chartTapArea, chartPressed && styles.pressed]}
               accessible
               accessibilityRole="button"
-              accessibilityLabel="View all transactions"
+              accessibilityLabel="View all expenses"
               onAccessibilityTap={onOpenAll}
               onStartShouldSetResponder={isInsideChart}
               onResponderGrant={() => setChartPressed(true)}

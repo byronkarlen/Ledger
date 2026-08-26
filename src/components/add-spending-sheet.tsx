@@ -202,7 +202,7 @@ function SheetContent({ onClose, editItem, editRule }: Omit<Props, 'visible'>) {
             <SymbolView name="xmark" size={16} tintColor={theme.textSecondary} weight="semibold" />
           </Pressable>
           <ThemedText style={styles.headerTitle}>
-            {editRule ? 'Edit Recurring Expense' : editItem ? 'Edit Purchase' : 'New Purchase'}
+            {editRule ? 'Edit Recurring Expense' : editItem ? 'Edit Expense' : 'New Expense'}
           </ThemedText>
           <Pressable
             onPress={handleSave}
@@ -322,7 +322,7 @@ function SheetContent({ onClose, editItem, editRule }: Omit<Props, 'visible'>) {
             style={({ pressed }) => [styles.deleteButton, pressed && { opacity: PressedOpacity }]}>
             <SymbolView name="trash" size={16} tintColor={Danger} />
             <ThemedText type="smallBold" style={styles.deleteLabel}>
-              {editRule ? 'Delete Recurring Expense' : 'Delete Purchase'}
+              {editRule ? 'Delete Recurring Expense' : 'Delete Expense'}
             </ThemedText>
           </Pressable>
         )}

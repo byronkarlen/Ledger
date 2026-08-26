@@ -9,6 +9,7 @@ export type CategoryKey =
   | 'health'
   | 'shopping'
   | 'recreation'
+  | 'entertainment'
   | 'travel'
   | 'other';
 
@@ -31,6 +32,7 @@ export const CATEGORIES: Category[] = [
   { key: 'health', label: 'Health', icon: 'heart.fill', color: '#00C7BE' },
   { key: 'shopping', label: 'Shopping', icon: 'bag.fill', color: '#FF2D92' },
   { key: 'recreation', label: 'Recreation', icon: 'gamecontroller.fill', color: '#AF52DE' },
+  { key: 'entertainment', label: 'Entertainment', icon: 'ticket.fill', color: '#FFCC00' },
   { key: 'travel', label: 'Travel', icon: 'airplane', color: '#5856D6' },
   { key: 'other', label: 'Other', icon: 'ellipsis.circle.fill', color: '#8E8E93' },
 ];

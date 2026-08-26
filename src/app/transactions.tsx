@@ -15,7 +15,7 @@ import { useLedger, type SpendingItem } from '@/store/ledger';
 type Filter = CategoryKey | 'all';
 
 const FILTER_OPTIONS: SelectOption[] = [
-  { value: 'all', label: 'All Transactions' },
+  { value: 'all', label: 'All Expenses' },
   ...CATEGORY_OPTIONS,
 ];
 
@@ -92,7 +92,7 @@ export default function TransactionsScreen() {
         ItemSeparatorComponent={RowSeparator}
         ListEmptyComponent={
           <ThemedText type="small" themeColor="textSecondary" style={styles.empty}>
-            No transactions for this filter.
+            No expenses for this filter.
           </ThemedText>
         }
       />

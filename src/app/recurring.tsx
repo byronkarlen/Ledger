@@ -52,7 +52,7 @@ export default function RecurringScreen() {
               No recurring expenses
             </ThemedText>
             <ThemedText type="small" themeColor="textSecondary" style={styles.emptyHint}>
-              Set “Repeats” to Monthly when adding a purchase.
+              Set “Repeats” to Monthly when adding an expense.
             </ThemedText>
           </View>
         }

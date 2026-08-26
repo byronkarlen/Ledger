@@ -27,7 +27,7 @@ export default function RootLayout() {
             <Stack.Screen name="index" options={{ title: 'Spending' }} />
             <Stack.Screen
               name="transactions"
-              options={{ title: 'Transactions', headerBackButtonDisplayMode: 'minimal' }}
+              options={{ title: 'Expenses', headerBackButtonDisplayMode: 'minimal' }}
             />
             <Stack.Screen
               name="recurring"
