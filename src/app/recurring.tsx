@@ -51,9 +51,6 @@ export default function RecurringScreen() {
             <ThemedText type="default" themeColor="textSecondary">
               No recurring expenses
             </ThemedText>
-            <ThemedText type="small" themeColor="textSecondary" style={styles.emptyHint}>
-              Set “Repeats” to Monthly when adding an expense.
-            </ThemedText>
           </View>
         }
       />
@@ -108,9 +105,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     gap: Spacing.two,
     paddingVertical: Spacing.six,
-  },
-  emptyHint: {
-    textAlign: 'center',
   },
   pressed: {
     opacity: PressedOpacity,
