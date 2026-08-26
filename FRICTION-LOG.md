@@ -128,6 +128,26 @@ Header config (`headerLargeTitleEnabled`, `scrollEdgeEffects`) only takes effect
 full app restart. Several minutes lost concluding a prop "did nothing" when it hadn't
 been applied yet.
 
+### A replaced Metro leaves apps silently running stale bundles
+Starting a second dev-server instance (`expo run:ios` while another Metro holds :8081)
+replaces the server, but already-running dev clients keep executing their cached bundle
+with no staleness indicator. `agent-device metro reload` "succeeds" (it messages the new
+Metro) while the app never receives it. Symptom: edits verified in the code don't appear;
+diagnosing cost a full round of "is my change even in the file?". Fix: kill and relaunch
+the app (`xcrun simctl terminate` + `launch`) so the dev client reconnects and refetches.
+
+### `expo run:ios` does not re-run prebuild
+Asset-catalog inputs (app icon, splash) are baked at `prebuild` time. Changing
+`icon.png` and running `expo run:ios` ships the OLD icon with no warning — the build
+"succeeds". Any icon/splash/plugin-config change needs an explicit `npx expo prebuild -p
+ios` first.
+
+### App icon precedence: `ios.icon` silently wins
+The Expo template ships its own branding twice: `icon` (PNG, all platforms) and
+`ios.icon` (an Icon Composer `.icon` bundle) — and the platform key overrides the
+top-level one on iOS. Replacing `icon.png` alone changes nothing on iPhone until the
+`ios.icon` entry is removed or replaced.
+
 ---
 
 ## @expo/ui SwiftUI hosting — the recurring theme
@@ -233,6 +253,12 @@ and presents its own `UIContextMenuConfiguration`, which bypasses the button pro
 The property has to be set on the *configuration* in that override. Patched via
 patch-package (`patches/@react-native-menu+menu+2.0.0.patch`, applied on `postinstall`);
 needs a native rebuild per destination.
+**Epilogue 3 — the open animation cannot be tamed.** iOS 26 menus open with a
+liquid-glass bloom that grows out of the anchor and *refracts* whatever it passes over
+(the nav-bar title smears for a few frames). Frame-by-frame capture proved it is
+refraction, not a snapshot of the anchor: replacing the anchor with an empty transparent
+overlay changed nothing. There is no public API to disable the bloom; Apple's own
+pop-up buttons do the same. Accepted as system behavior.
 
 ---
 
@@ -295,6 +321,11 @@ Keyed on length only — keying on the month would cancel the chevrons' slide an
   text by a frame. Fixed permanently with a fixed-width field — no layout change, nothing
   to flicker. A rejected character still paints for one frame before the sanitizer removes
   it; that's inherent to JS-side validation.
+- **Reanimated `exiting` animations can't tell WHY a component unmounted.** A
+  `SlideOutLeft` exit meant for deletions also fired when a filter change removed rows —
+  every leaving row "flew off" at once. If an exit animation should accompany only one
+  cause of unmount, drive it explicitly (a flag + deferred removal) or use a
+  cause-scoped mechanism like a delete-only `LayoutAnimation.configureNext`.
 - **The one-frame lag generalizes: text, prefixes, and styles.** A "$" prefix that only
   joins the value with the first digit paints the bare digit for a frame before the
   round-trip shoves the $ in — the prefix must already live in the *native* text (value is
@@ -350,6 +381,20 @@ Keyed on length only — keying on the month would cancel the chevrons' slide an
   before mounting the Root Layout" render error); clear on sheet close instead.
 - **Two tap targets in one widget:** `widgetURL` on the root is the default action;
   wrap the other region in `Link destination=...`. Widgets support only one `widgetURL`.
+- **The widget's layout and data exist only after the app runs.** `createWidget` writes
+  the extracted layout JS, and `updateSnapshot` writes props, into app-group storage at
+  APP runtime. A fresh install shows placeholder until the app launches once. The
+  placeholder you see is your own layout rendered with nil props and auto-redacted (grey
+  pills) — recognizing that saves a debugging round.
+- **WidgetKit reloads lazily.** Even with everything fixed and a fresh snapshot pushed,
+  the placed widget can sit on the placeholder (or an archived error view) for minutes
+  before the system re-renders. Remove-and-re-add forces a fresh render; otherwise
+  patience — do not diagnose new bugs from a stale view.
+- **Debugging trick: pull the app-group store off the device.** Dev-signed apps allow
+  `xcrun devicectl device copy from --domain-type appGroupDataContainer
+  --domain-identifier group.<bundle> --source Library/Preferences/<group>.plist` — then
+  `plutil -convert json` shows exactly what layout and timeline the widget extension
+  sees. This is how "the data is fine, the render path is the problem" got proven.
 - **"Please adopt containerBackground API" — device-only, and doubly masked.** iOS 17+
   replaces a widget that doesn't declare `containerBackground` with that error view, but
   the check is only enforced by the real home-screen render on hardware: the simulator
@@ -398,6 +443,14 @@ Keyed on length only — keying on the month would cancel the chevrons' slide an
 
 - `agent-device`'s quick swipe fling doesn't trigger paging gestures; real drags work.
   Cost real time chasing a "bug" that wasn't one.
+- **Refs are single-use-ish:** after any snapshot, old refs error with "needs a complete
+  snapshot". Selector values with spaces need inner quotes (`text="Sign in"`), and exact
+  match fails on concatenated cell labels — `find "Delta" press` (contains-match) works.
+- **Interrupting a command can wedge the iOS runner** (RUNNER_BUSY on everything after).
+  `close` + re-`open` the session resets it.
+- **`agent-device record` is tiny (220px) on simulators.** For pixel work, record with
+  `xcrun simctl io booted recordVideo` (full resolution, but it only writes frames when
+  the screen changes — a "3-second" clip can be 2 frames) and extract frames with ffmpeg.
 - **`press "some label"` isn't a thing** — a bare string is `INVALID_ARGS`. Targets are
   `@refs` from `snapshot -i`, `key=value` selectors, or raw point coordinates
   (physical px ÷ scale).
