@@ -1,5 +1,6 @@
 import { Button, GlassEffectContainer, Host } from '@expo/ui/swift-ui';
 import {
+  buttonStyle,
   font,
   foregroundColor,
   frame,
@@ -33,6 +34,11 @@ export function AddButton({ onPress }: Props) {
           systemImage="plus"
           onPress={onPress}
           modifiers={[
+            // 'plain' strips the Button's own system chrome. Without it, the
+            // default style draws its own background shape UNDER our
+            // glassEffect circle — invisible on light, but in dark mode both
+            // materials render and it reads as a button inside a button.
+            buttonStyle('plain'),
             labelStyle('iconOnly'),
             font({ size: 20, weight: 'semibold' }),
             foregroundColor(Accent),
