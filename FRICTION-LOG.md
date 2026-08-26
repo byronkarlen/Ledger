@@ -259,6 +259,17 @@ liquid-glass bloom that grows out of the anchor and *refracts* whatever it passe
 refraction, not a snapshot of the anchor: replacing the anchor with an empty transparent
 overlay changed nothing. There is no public API to disable the bloom; Apple's own
 pop-up buttons do the same. Accepted as system behavior.
+**Epilogue 4 — the dismiss artifact was our targeted preview.** The category selector
+looked clean while the menu was open, then after choosing an item a liquid-glass blob
+briefly appeared over the sheet and distorted nearby text/fields. A diagnostic
+`UIPreviewParameters.backgroundColor = .red` made the blob red, proving the artifact was
+UIKit's `UIContextMenuInteraction` targeted preview, not React Native layout or the
+bottom sheet. Supplying only a clear `backgroundColor` removed the obvious platter but
+still let UIKit snapshot the menu button itself and animate that source preview back to
+the selector on dismissal. The preview must also use
+`params.visiblePath = UIBezierPath(rect: .zero)`, so UIKit has no trigger snapshot to
+draw. Patched in `patches/@react-native-menu+menu+2.0.0.patch`; requires a native rebuild
+per destination.
 
 ---
 

@@ -1,8 +1,8 @@
 diff --git a/node_modules/@react-native-menu/menu/ios/Shared/MenuViewImplementation.swift b/node_modules/@react-native-menu/menu/ios/Shared/MenuViewImplementation.swift
-index 5c4e0da..2d71c73 100644
+index 5c4e0da..e0f5846 100644
 --- a/node_modules/@react-native-menu/menu/ios/Shared/MenuViewImplementation.swift
 +++ b/node_modules/@react-native-menu/menu/ios/Shared/MenuViewImplementation.swift
-@@ -61,10 +61,18 @@ public class MenuViewImplementation: UIButton {
+@@ -61,16 +61,42 @@ public class MenuViewImplementation: UIButton {
     
      public override func contextMenuInteraction(_ interaction: UIContextMenuInteraction, configurationForMenuAtLocation location: CGPoint) -> UIContextMenuConfiguration? {
          sendMenuOpen()
@@ -22,7 +22,32 @@ index 5c4e0da..2d71c73 100644
      }
      
      public override func contextMenuInteraction(_ interaction: UIContextMenuInteraction, willEndFor configuration: UIContextMenuConfiguration, animator: UIContextMenuInteractionAnimating?) {
-@@ -88,6 +96,12 @@ public class MenuViewImplementation: UIButton {
+         sendMenuClose()
+     }
+ 
++    // The system wraps the anchor in a glass platter while presenting and
++    // dismissing the menu. Supplying an empty preview prevents UIKit from
++    // snapshotting the trigger text into that liquid-glass animation.
++    public override func contextMenuInteraction(_ interaction: UIContextMenuInteraction, previewForHighlightingMenuWithConfiguration configuration: UIContextMenuConfiguration) -> UITargetedPreview? {
++        clearPreview()
++    }
++
++    public override func contextMenuInteraction(_ interaction: UIContextMenuInteraction, previewForDismissingMenuWithConfiguration configuration: UIContextMenuConfiguration) -> UITargetedPreview? {
++        clearPreview()
++    }
++
++    private func clearPreview() -> UITargetedPreview {
++        let params = UIPreviewParameters()
++        params.backgroundColor = .clear
++        params.visiblePath = UIBezierPath(rect: .zero)
++        params.shadowPath = UIBezierPath(rect: .zero)
++        return UITargetedPreview(view: self, parameters: params)
++    }
++
+     func setup () {
+         let menu = UIMenu(title: _title,
+             identifier: nil,
+@@ -88,6 +114,12 @@ public class MenuViewImplementation: UIButton {
  
          self.menu = menu
          self.showsMenuAsPrimaryAction = !shouldOpenOnLongPress

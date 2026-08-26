@@ -71,12 +71,18 @@ said so.** Every one of these produced a "my change does nothing" mystery.
 11. **Simulator does not render Liquid Glass faithfully** — `tint()` fills the material
     on hardware but only the glyph in the simulator.
     *Wanted:* a docs warning that glass work must be verified on device.
+12. **UIKit context-menu previews can masquerade as Liquid Glass layout bugs.** The
+    category selector's dismiss glitch was not RN layout: a red diagnostic
+    `UIPreviewParameters.backgroundColor` proved it was the `UIContextMenuInteraction`
+    targeted preview animating back to the trigger. A clear background is insufficient;
+    the preview also needs `visiblePath = UIBezierPath(rect: .zero)` so UIKit has no
+    source snapshot to draw. Patch-package fix; native rebuild required.
 
 ## expo-router / react-navigation vendoring
 
-12. **`useHeaderHeight` isn't exported** from expo-router's public entry — the working
+13. **`useHeaderHeight` isn't exported** from expo-router's public entry — the working
     import is the internal vendored path `expo-router/build/react-navigation/elements`.
-13. **The docs lag the vendored types**: `scrollEdgeEffects` exists and works but appears
+14. **The docs lag the vendored types**: `scrollEdgeEffects` exists and works but appears
     on no docs page; `headerLargeTitle` is silently dead (renamed
     `headerLargeTitleEnabled` — no deprecation warning). The vendored `types.d.ts` is the
     only source of truth.
