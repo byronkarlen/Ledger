@@ -1,5 +1,5 @@
 import { PagerView, type PagerViewRef } from '@expo/ui/community/pager-view';
-import { Stack, useRouter } from 'expo-router';
+import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -20,6 +20,26 @@ export default function SpendingScreen() {
   // Opens on the current month: it is always the last entry in the range.
   const [month, setMonth] = useState(currentMonthKey());
   const [sheetVisible, setSheetVisible] = useState(false);
+
+  // The home-screen widget deep-links to ledger:///?add=1. getInitialURL
+  // covers cold starts, the event covers taps while the app is alive; both
+  // just open the sheet — already-open is a no-op.
+  // The home-screen widget deep-links to ledger:///?add=1. The dev client
+  // swallows raw Linking events, but expo-router still delivers the URL as
+  // route params. Clearing the param afterwards lets the next tap re-fire.
+  const params = useLocalSearchParams<{ add?: string }>();
+  useEffect(() => {
+    if (params.add === '1') {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- responding to an external deep link, not derived state
+      setSheetVisible(true);
+    }
+  }, [params.add]);
+  // Clearing the param on close (never during mount — navigating before the
+  // root layout mounts is a render error) lets the next widget tap re-fire.
+  const closeSheet = () => {
+    setSheetVisible(false);
+    if (params.add) router.setParams({ add: '' });
+  };
   const pagerRef = useRef<PagerViewRef>(null);
 
   const months = useMemo(() => monthOptions(items), [items]);
@@ -95,7 +115,7 @@ export default function SpendingScreen() {
         <AddButton onPress={() => setSheetVisible(true)} />
       </View>
 
-      <AddSpendingSheet visible={sheetVisible} onClose={() => setSheetVisible(false)} />
+      <AddSpendingSheet visible={sheetVisible} onClose={closeSheet} />
     </View>
   );
 }

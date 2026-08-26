@@ -332,6 +332,27 @@ Keyed on length only — keying on the month would cancel the chevrons' slide an
 
 ---
 
+## Widgets (expo-widgets)
+
+- **The `'widget'` directive extracts only the marked function.** Like worklets: the
+  function is compiled into a separate mini-bundle for the widget extension, so imports
+  from app modules (`Accent` from the theme) throw `Can't find variable` at widget
+  runtime. `@expo/ui` imports are provided by the widget runtime; everything else must be
+  inlined into the function.
+- **Widget code is embedded at Xcode build time.** No Metro, no fast refresh — every
+  widget-side change (and every `supportedFamilies`/plugin change) needs a full native
+  rebuild before the gallery shows it.
+- **Deep links in a dev build never reach RN's `Linking`.** The dev client swallows the
+  raw url events (`getInitialURL()` returns null, the `url` event never fires), but
+  expo-router still delivers the URL as route params — handle `?add=1` via
+  `useLocalSearchParams`. The param then *persists* on the route, so clear it with
+  `router.setParams` when done — but never during initial mount ("attempted to navigate
+  before mounting the Root Layout" render error); clear on sheet close instead.
+- **Two tap targets in one widget:** `widgetURL` on the root is the default action;
+  wrap the other region in `Link destination=...`. Widgets support only one `widgetURL`.
+
+---
+
 ## Tooling notes
 
 - **agent-device on a physical iPhone — works, but needs three things.** Its XCUITest
@@ -371,5 +392,10 @@ Keyed on length only — keying on the month would cancel the chevrons' slide an
   closed".
 - **AX frames for pager content are unreliable** — refs inside `PagerView` pages resolved
   to coordinates overlapping the chart and taps landed wrong. Screenshot + points worked.
+- **agent-device sessions are bound to one app.** Gestures on the home screen from an
+  app-bound session re-foreground the app; drive SpringBoard (the system app that *is*
+  the home screen) with its own session: `open com.apple.springboard`. The inverse also
+  holds — `type` delivers keys only to the session's own app, so typing into the app from
+  a SpringBoard session silently does nothing. Taps are global; keys are not.
 - Pixel-measuring screenshots (a small PNG reader script) settled several
   "does this actually change anything?" questions that eyeballing couldn't.

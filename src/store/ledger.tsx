@@ -1,4 +1,5 @@
 import Storage from 'expo-sqlite/kv-store';
+import { Platform } from 'react-native';
 import {
   createContext,
   useCallback,
@@ -11,6 +12,8 @@ import {
 } from 'react';
 
 import type { CategoryKey } from '@/constants/categories';
+import { categoryBreakdown, currentMonthKey, formatCurrency, formatMonthName, itemsInMonth, sumAmounts } from '@/lib/spending';
+import AddExpenseWidget from '@/widgets/add-expense-widget';
 
 export type SpendingItem = {
   id: string;
@@ -34,6 +37,24 @@ const LedgerContext = createContext<LedgerContextValue | null>(null);
 const STORAGE_KEY = 'ledger.items.v1';
 
 const byDateDesc = (a: SpendingItem, b: SpendingItem) => b.date.localeCompare(a.date);
+
+// The widget's category bar sizes segments in container-relative units where
+// 100 = the widget's full width; ~90 units approximates the padded content
+// width. Quantize each category's share into those units, minimum 1, and
+// settle rounding drift on the largest segment.
+const WIDGET_BAR_UNITS = 90;
+function widgetSegments(items: SpendingItem[]) {
+  const breakdown = categoryBreakdown(items);
+  const total = sumAmounts(items);
+  if (total <= 0 || breakdown.length === 0) return [];
+  const segments = breakdown.map((b) => ({
+    color: b.category.color,
+    span: Math.max(1, Math.round((b.amount / total) * WIDGET_BAR_UNITS)),
+  }));
+  const drift = WIDGET_BAR_UNITS - segments.reduce((sum, s) => sum + s.span, 0);
+  segments[0].span = Math.max(1, segments[0].span + drift);
+  return segments;
+}
 
 /** Local calendar date (month is 1-based) as an ISO timestamp. */
 function d(year: number, month: number, day: number): string {
@@ -95,10 +116,20 @@ export function LedgerProvider({ children }: { children: ReactNode }) {
     })();
   }, []);
 
-  // Persist whenever items change, but only after the initial load.
+  // Persist whenever items change, but only after the initial load. The
+  // home-screen widget shows the same numbers, so it refreshes here too.
   useEffect(() => {
     if (!hydrated.current) return;
     Storage.setItem(STORAGE_KEY, JSON.stringify(items)).catch(() => {});
+    if (Platform.OS === 'ios') {
+      const month = currentMonthKey();
+      const monthItems = itemsInMonth(items, month);
+      AddExpenseWidget.updateSnapshot({
+        totalLabel: formatCurrency(sumAmounts(monthItems)),
+        monthLabel: formatMonthName(month),
+        segments: widgetSegments(monthItems),
+      });
+    }
   }, [items]);
 
   const addItem = useCallback((item: NewSpendingItem) => {

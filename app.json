@@ -37,7 +37,21 @@
         }
       ],
       "expo-sqlite",
-      "expo-widgets",
+      [
+        "expo-widgets",
+        {
+          "widgets": [
+            {
+              "name": "AddExpense",
+              "displayName": "Add Expense",
+              "description": "This month's spend, one tap to add.",
+              "supportedFamilies": [
+                "systemMedium"
+              ]
+            }
+          ]
+        }
+      ],
       "expo-image"
     ],
     "experiments": {
