@@ -92,7 +92,7 @@ export default function TransactionsScreen() {
         ItemSeparatorComponent={RowSeparator}
         ListEmptyComponent={
           <ThemedText type="small" themeColor="textSecondary" style={styles.empty}>
-            No expenses for this filter.
+            No expenses for this category.
           </ThemedText>
         }
       />
