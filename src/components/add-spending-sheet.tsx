@@ -6,7 +6,7 @@ import BottomSheet, {
 } from '@gorhom/bottom-sheet';
 import { SymbolView } from 'expo-symbols';
 import { useCallback, useEffect, useRef, useState, type ComponentRef } from 'react';
-import { Keyboard, Modal, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Keyboard, Modal, Pressable, StyleSheet, Switch, Text, View } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import Animated, {
   useAnimatedStyle,
@@ -22,7 +22,8 @@ import { NativeSelect } from '@/components/native-select';
 import { ThemedText } from '@/components/themed-text';
 import { CATEGORY_OPTIONS, type CategoryKey } from '@/constants/categories';
 import { Accent, Danger, PressedOpacity, Spacing, useTheme } from '@/constants/theme';
-import { useLedger, type SpendingItem } from '@/store/ledger';
+import { formatDayOrdinal } from '@/lib/spending';
+import { useLedger, type RecurringRule, type SpendingItem } from '@/store/ledger';
 
 /** Shared height for every input row, so they line up. */
 const FIELD_HEIGHT = 52;
@@ -44,6 +45,9 @@ type Props = {
   onClose: () => void;
   /** When provided, the sheet edits this item instead of creating a new one. */
   editItem?: SpendingItem | null;
+  /** When provided, the sheet edits this recurring rule (title/amount/category;
+      the day it repeats on is fixed at creation). */
+  editRule?: RecurringRule | null;
 };
 
 /**
@@ -54,7 +58,7 @@ type Props = {
  * The Modal unmounts its content on close, so the form resets by construction
  * and the keyboard dismisses with it.
  */
-export function AddSpendingSheet({ visible, onClose, editItem }: Props) {
+export function AddSpendingSheet({ visible, onClose, editItem, editRule }: Props) {
   return (
     <Modal
       visible={visible}
@@ -65,17 +69,17 @@ export function AddSpendingSheet({ visible, onClose, editItem }: Props) {
       {/* Gestures don't cross into a modal's native view hierarchy, so the
           sheet needs its own gesture root. */}
       <GestureHandlerRootView style={styles.host}>
-        <SheetContent onClose={onClose} editItem={editItem} />
+        <SheetContent onClose={onClose} editItem={editItem} editRule={editRule} />
       </GestureHandlerRootView>
     </Modal>
   );
 }
 
-function SheetContent({ onClose, editItem }: Omit<Props, 'visible'>) {
+function SheetContent({ onClose, editItem, editRule }: Omit<Props, 'visible'>) {
   const theme = useTheme();
   const insets = useSafeAreaInsets();
-  const { addItem, updateItem, deleteItem } = useLedger();
-  const isEditing = !!editItem;
+  const { addItem, addRecurring, updateItem, deleteItem, updateRule, deleteRule } = useLedger();
+  const isEditing = !!editItem || !!editRule;
   const sheetRef = useRef<BottomSheet>(null);
   const amountRef = useRef<ComponentRef<typeof BottomSheetTextInput>>(null);
   const titleRef = useRef<ComponentRef<typeof BottomSheetTextInput>>(null);
@@ -85,14 +89,17 @@ function SheetContent({ onClose, editItem }: Omit<Props, 'visible'>) {
   // tearing down the Modal.
   const hasOpened = useRef(false);
 
-  // Mounts fresh on every open, so initializers read the target item directly.
-  const [title, setTitle] = useState(editItem?.title ?? '');
+  // Mounts fresh on every open, so initializers read the target directly.
+  const target = editItem ?? editRule;
+  const [title, setTitle] = useState(target?.title ?? '');
   // Whole dollars everywhere; rounding here also cleans up any older
   // cent-precision data on its way through an edit.
-  const [amount, setAmount] = useState(editItem ? String(Math.round(editItem.amount)) : '');
+  const [amount, setAmount] = useState(target ? String(Math.round(target.amount)) : '');
   // New items start with no category: a silently wrong default would flow
   // straight into the chart, so the save button waits for a deliberate pick.
-  const [category, setCategory] = useState<CategoryKey | null>(editItem?.category ?? null);
+  const [category, setCategory] = useState<CategoryKey | null>(target?.category ?? null);
+  // Creating only: whether to also start a monthly rule anchored to today.
+  const [recurring, setRecurring] = useState(false);
   // Drives the custom caret next to the rendered hero amount.
   const [amountFocused, setAmountFocused] = useState(false);
 
@@ -118,19 +125,27 @@ function SheetContent({ onClose, editItem }: Omit<Props, 'visible'>) {
     const roundedAmount = Math.round(parsedAmount);
     if (editItem) {
       updateItem({ ...editItem, title: title.trim(), amount: roundedAmount, category });
+    } else if (editRule) {
+      updateRule({ ...editRule, title: title.trim(), amount: roundedAmount, category });
     } else {
-      addItem({
+      const item = {
         title: title.trim(),
         amount: roundedAmount,
         category,
         date: new Date().toISOString(),
-      });
+      };
+      if (recurring) {
+        addRecurring(item);
+      } else {
+        addItem(item);
+      }
     }
     close();
   }
 
   function handleDelete() {
     if (editItem) deleteItem(editItem.id);
+    if (editRule) deleteRule(editRule.id);
     close();
   }
 
@@ -187,7 +202,7 @@ function SheetContent({ onClose, editItem }: Omit<Props, 'visible'>) {
             <SymbolView name="xmark" size={16} tintColor={theme.textSecondary} weight="semibold" />
           </Pressable>
           <ThemedText style={styles.headerTitle}>
-            {isEditing ? 'Edit Purchase' : 'New Purchase'}
+            {editRule ? 'Edit Recurring Expense' : editItem ? 'Edit Purchase' : 'New Purchase'}
           </ThemedText>
           <Pressable
             onPress={handleSave}
@@ -271,13 +286,43 @@ function SheetContent({ onClose, editItem }: Omit<Props, 'visible'>) {
           </View>
         </View>
 
+        {!isEditing && (
+          <View style={styles.labeledField}>
+            <ThemedText type="smallBold" themeColor="textSecondary" style={styles.caption}>
+              Repeats
+            </ThemedText>
+            <View
+              style={[styles.fieldBox, styles.switchRow, { backgroundColor: theme.background }]}>
+              {/* Placeholder-grey until the switch makes it a real value,
+                  mirroring how the other fields read once filled in. */}
+              <ThemedText
+                type="default"
+                style={{ color: recurring ? theme.text : theme.textSecondary }}>
+                Monthly
+              </ThemedText>
+              <Switch
+                value={recurring}
+                onValueChange={setRecurring}
+                trackColor={{ true: Accent }}
+                style={styles.switch}
+              />
+            </View>
+          </View>
+        )}
+
+        {editRule && (
+          <ThemedText type="small" themeColor="textSecondary" style={styles.repeatsNote}>
+            Repeats monthly on the {formatDayOrdinal(editRule.dayOfMonth)}
+          </ThemedText>
+        )}
+
         {isEditing && (
           <Pressable
             onPress={handleDelete}
             style={({ pressed }) => [styles.deleteButton, pressed && { opacity: PressedOpacity }]}>
             <SymbolView name="trash" size={16} tintColor={Danger} />
             <ThemedText type="smallBold" style={styles.deleteLabel}>
-              Delete Purchase
+              {editRule ? 'Delete Recurring Expense' : 'Delete Purchase'}
             </ThemedText>
           </Pressable>
         )}
@@ -343,6 +388,19 @@ const styles = StyleSheet.create({
   },
   categorySelectRow: {
     justifyContent: 'center',
+  },
+  switchRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  // UISwitch reports a slightly different layout height than it paints, so
+  // flexbox centering leaves it hugging the box's top; pin it explicitly.
+  switch: {
+    alignSelf: 'center',
+  },
+  repeatsNote: {
+    textAlign: 'center',
   },
   // --- Variant C: borderless hero amount ---
   heroAmount: {

@@ -62,6 +62,7 @@ export default function SpendingScreen() {
     (category: string) => router.push({ pathname: '/transactions', params: { category } }),
     [router],
   );
+  const openRecurring = useCallback(() => router.push('/recurring'), [router]);
 
   const stepMonth = (delta: number) => {
     const next = months[index + delta];
@@ -106,6 +107,7 @@ export default function SpendingScreen() {
               bottomPadding={ControlHeight + insets.bottom + Spacing.four}
               onOpenAll={openAll}
               onOpenCategory={openCategory}
+              onOpenRecurring={openRecurring}
             />
           </View>
         ))}

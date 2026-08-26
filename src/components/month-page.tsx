@@ -17,6 +17,7 @@ import { CategoryBadge, RowSeparator } from '@/components/transaction-row';
 import { PressedOpacity, Spacing, useTheme } from '@/constants/theme';
 import {
   categoryBreakdown,
+  currentMonthKey,
   formatCurrency,
   formatMonthName,
   itemsInMonth,
@@ -42,10 +43,18 @@ type Props = {
   bottomPadding: number;
   onOpenAll: () => void;
   onOpenCategory: (category: string) => void;
+  onOpenRecurring: () => void;
 };
 
 /** One swipeable page: the donut and category breakdown for a single month. */
-export function MonthPage({ month, items, bottomPadding, onOpenAll, onOpenCategory }: Props) {
+export function MonthPage({
+  month,
+  items,
+  bottomPadding,
+  onOpenAll,
+  onOpenCategory,
+  onOpenRecurring,
+}: Props) {
   const theme = useTheme();
   const headerHeight = useHeaderHeight();
   const [chartPressed, setChartPressed] = useState(false);
@@ -109,6 +118,24 @@ export function MonthPage({ month, items, bottomPadding, onOpenAll, onOpenCatego
                 <ThemedText style={styles.chartTotal}>{formatCurrency(total)}</ThemedText>
               </View>
             </View>
+            {/* Recurring rules are global config, not month history, so the
+                button rides only the current month's page — same rule as the
+                add button. Anchored to the chart wrap's corner, which sits in
+                the dead space between the donut and the breakdown list. */}
+            {month === currentMonthKey() && (
+              <Pressable
+                onPress={onOpenRecurring}
+                hitSlop={8}
+                accessibilityRole="button"
+                accessibilityLabel="Recurring expenses"
+                style={({ pressed }) => [
+                  styles.recurringButton,
+                  { backgroundColor: theme.backgroundElement },
+                  pressed && styles.pressed,
+                ]}>
+                <SymbolView name="repeat" size={18} tintColor={theme.textSecondary} weight="semibold" />
+              </Pressable>
+            )}
           </View>
 
           <View style={styles.breakdown}>
@@ -168,6 +195,16 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     lineHeight: 48,
     marginTop: Spacing.half,
+  },
+  recurringButton: {
+    position: 'absolute',
+    right: 0,
+    bottom: 0,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   breakdown: {
     paddingHorizontal: Spacing.four,

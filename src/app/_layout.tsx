@@ -29,6 +29,10 @@ export default function RootLayout() {
               name="transactions"
               options={{ title: 'Transactions', headerBackButtonDisplayMode: 'minimal' }}
             />
+            <Stack.Screen
+              name="recurring"
+              options={{ title: 'Recurring Expenses', headerBackButtonDisplayMode: 'minimal' }}
+            />
           </Stack>
         </LedgerProvider>
       </ThemeProvider>

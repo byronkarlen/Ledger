@@ -72,6 +72,53 @@ export function formatDayShort(iso: string): string {
   return new Date(iso).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
 }
 
+/** Ordinal day, e.g. "1st", "22nd" — used for recurring rule schedules. */
+export function formatDayOrdinal(day: number): string {
+  const tens = day % 100;
+  if (tens >= 11 && tens <= 13) return `${day}th`;
+  const suffix = { 1: 'st', 2: 'nd', 3: 'rd' }[day % 10] ?? 'th';
+  return `${day}${suffix}`;
+}
+
+/**
+ * Local-noon ISO timestamp for the given calendar day (month is 1-based),
+ * clamping the day to the month's length: a day-31 rule posts on Feb 28.
+ */
+export function clampedDateISO(year: number, month: number, day: number): string {
+  const lastDay = new Date(year, month, 0).getDate();
+  return new Date(year, month - 1, Math.min(day, lastDay), 12).toISOString();
+}
+
+/** The rule's occurrence in the calendar month after `fromISO`. */
+export function dueDateNextMonth(fromISO: string, dayOfMonth: number): string {
+  const from = new Date(fromISO);
+  const wraps = from.getMonth() === 11;
+  return clampedDateISO(
+    from.getFullYear() + (wraps ? 1 : 0),
+    wraps ? 1 : from.getMonth() + 2,
+    dayOfMonth,
+  );
+}
+
+/**
+ * All due dates for a monthly rule from its watermark through `now`, plus the
+ * advanced watermark. Each month re-clamps from `dayOfMonth`, so a day-31
+ * rule posts Feb 28 and then returns to the 31st in longer months.
+ */
+export function occurrencesThrough(
+  nextDueDate: string,
+  dayOfMonth: number,
+  now: Date,
+): { dates: string[]; nextDueDate: string } {
+  const dates: string[] = [];
+  let due = nextDueDate;
+  while (new Date(due).getTime() <= now.getTime()) {
+    dates.push(due);
+    due = dueDateNextMonth(due, dayOfMonth);
+  }
+  return { dates, nextDueDate: due };
+}
+
 /** Whole dollars, e.g. "$1,310" — the app ignores cent granularity. */
 export function formatCurrency(amount: number): string {
   return `$${Math.round(amount).toLocaleString('en-US')}`;

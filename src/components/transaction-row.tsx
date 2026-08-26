@@ -26,6 +26,7 @@ export function RowSeparator() {
 }
 
 export const TransactionRow = memo(function TransactionRow({ item }: { item: SpendingItem }) {
+  const theme = useTheme();
   const category = CATEGORY_MAP[item.category];
   return (
     <View style={styles.row}>
@@ -34,9 +35,16 @@ export const TransactionRow = memo(function TransactionRow({ item }: { item: Spe
         <ThemedText type="default" numberOfLines={1}>
           {item.title}
         </ThemedText>
-        <ThemedText type="small" themeColor="textSecondary">
-          {category.label} · {formatDayShort(item.date)}
-        </ThemedText>
+        <View style={styles.subtitleRow}>
+          <ThemedText type="small" themeColor="textSecondary">
+            {category.label} · {formatDayShort(item.date)}
+          </ThemedText>
+          {/* Provenance marker only — recurrence is managed on the Recurring
+              screen, never from a transaction. */}
+          {!!item.recurringRuleId && (
+            <SymbolView name="repeat" size={11} tintColor={theme.textSecondary} />
+          )}
+        </View>
       </View>
       <ThemedText type="smallBold" style={styles.amount}>
         {formatCurrency(item.amount)}
@@ -66,6 +74,11 @@ const styles = StyleSheet.create({
   rowText: {
     flex: 1,
     gap: 1,
+  },
+  subtitleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.one,
   },
   amount: {
     fontSize: 16,
