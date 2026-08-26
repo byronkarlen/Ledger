@@ -174,6 +174,9 @@ function SheetContent({ onClose, editItem, editRule }: Omit<Props, 'visible'>) {
       ref={sheetRef}
       // Dynamic sizing: the sheet hugs its content, and "interactive" lifts
       // it above the keyboard as it appears and disappears.
+      // Never above the Dynamic Island: dynamic sizing + the keyboard lift
+      // can otherwise push the sheet's top edge into the status-bar region.
+      topInset={insets.top + Spacing.two}
       keyboardBehavior="interactive"
       keyboardBlurBehavior="restore"
       onChange={(index) => {
